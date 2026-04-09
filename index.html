@@ -778,11 +778,91 @@
             .form-panel      { padding: 22px 16px; }
             .pass-panel      { padding: 28px 20px 22px; }
             .page-wrap       { margin-top: -24px; padding: 0 10px; }
-            .kamus-table thead th.th-contoh,
-            .kamus-table td.td-contoh { display: none; }
-            .kamus-table thead th.th-kat,
-            .kamus-table td.td-kat { display: none; }
             .stat-num        { font-size: 1.3rem; }
+
+            /* ── Mobile: sembunyikan kolom Kategori, Contoh, Kontributor di header/cell ── */
+            .kamus-table thead th.th-kat,
+            .kamus-table thead th.th-contoh,
+            .kamus-table thead th:last-child { display: none; }
+
+            .kamus-table td.td-kat,
+            .kamus-table td.td-contoh,
+            .kamus-table td.td-kontrib { display: none; }
+
+            /* ── Baris utama lebih rapi di HP ── */
+            .kamus-table td { padding: 10px 10px; }
+            .kamus-table .td-no { font-size: 0.65rem; width: 28px; padding: 10px 4px; }
+            .kamus-table .td-kata-utama { font-size: 0.92rem; }
+            .kamus-table .td-kata-terjemah { font-size: 0.84rem; }
+
+            /* ── Tombol expand ── */
+            .td-expand { display: table-cell !important; width: 36px; text-align: center; padding: 0 4px !important; }
+
+            /* ── Panel detail yang muncul saat klik ── */
+            .detail-row { display: none; }
+            .detail-row.open { display: table-row; }
+            .detail-row td {
+                padding: 0 !important;
+                background: #f8faff;
+                border-bottom: 2px solid var(--biru-muda);
+            }
+            .detail-panel {
+                padding: 12px 14px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                animation: fadeIn 0.2s ease both;
+            }
+            .detail-kat-row {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .detail-label {
+                font-size: 0.6rem;
+                font-weight: 800;
+                color: var(--abu);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                min-width: 70px;
+            }
+            .detail-contoh {
+                font-size: 0.8rem;
+                color: #475569;
+                font-style: italic;
+                line-height: 1.6;
+                border-left: 3px solid var(--biru-muda);
+                padding-left: 10px;
+                margin-top: 2px;
+            }
+            .detail-kontrib {
+                font-size: 0.68rem;
+                color: #94a3b8;
+                font-weight: 700;
+                text-align: right;
+            }
+            .btn-expand {
+                background: none;
+                border: none;
+                cursor: pointer;
+                font-size: 1rem;
+                color: var(--biru);
+                padding: 4px;
+                transition: transform 0.2s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 28px; height: 28px;
+                border-radius: 50%;
+            }
+            .btn-expand:hover { background: #e8f4fd; }
+            .btn-expand.open { transform: rotate(180deg); color: var(--merah); }
+        }
+
+        /* Desktop: sembunyikan tombol expand & detail row */
+        @media (min-width: 641px) {
+            .td-expand { display: none !important; }
+            .detail-row { display: none !important; }
         }
 
         @media (max-width: 400px) {
@@ -906,6 +986,7 @@
                     <th class="th-kat">Kategori</th>
                     <th class="th-contoh">Contoh Kalimat</th>
                     <th>Kontributor</th>
+                    <th class="td-expand" style="width:40px"></th>
                 </tr>
             </thead>
             <tbody id="wordList">
@@ -1075,14 +1156,41 @@
             const kat    = (item.kategori || 'Umum').trim();
             const katCls = KAT_CLASS[kat] || 'kat-Umum';
             const delay  = Math.min(i, 25) * 0.025;
-            return '<tr style="animation-delay:' + delay + 's">' +
+            const rowId  = 'detail-' + i;
+            const hasDetail = item.contoh || item.kontributor;
+
+            const mainRow = '<tr style="animation-delay:' + delay + 's" class="main-row">' +
                 '<td class="td-no">' + (i + 1) + '</td>' +
                 '<td class="td-kata-utama">' + esc(title) + '</td>' +
                 '<td class="td-kata-terjemah">' + esc(sub) + '</td>' +
                 '<td class="td-kat"><span class="kat-pill ' + katCls + '">' + esc(kat) + '</span></td>' +
                 '<td class="td-contoh">' + (item.contoh ? esc(item.contoh) : '<em style="opacity:0.45">—</em>') + '</td>' +
                 '<td class="td-kontrib"><span>' + esc(item.kontributor || 'Anonim') + '</span></td>' +
+                '<td class="td-expand">' +
+                    '<button class="btn-expand" onclick="toggleDetail(\'' + rowId + '\', this)" title="Lihat detail">▾</button>' +
+                '</td>' +
                 '</tr>';
+
+            const detailRow = '<tr class="detail-row" id="' + rowId + '">' +
+                '<td colspan="7">' +
+                    '<div class="detail-panel">' +
+                        '<div class="detail-kat-row">' +
+                            '<span class="detail-label">Kategori</span>' +
+                            '<span class="kat-pill ' + katCls + '">' + esc(kat) + '</span>' +
+                        '</div>' +
+                        (item.contoh
+                            ? '<div>' +
+                                '<div class="detail-label" style="margin-bottom:4px">Contoh Kalimat</div>' +
+                                '<div class="detail-contoh">' + esc(item.contoh) + '</div>' +
+                              '</div>'
+                            : '<div class="detail-contoh" style="opacity:0.5;font-style:italic">Belum ada contoh kalimat</div>'
+                        ) +
+                        '<div class="detail-kontrib">👤 ' + esc(item.kontributor || 'Anonim') + '</div>' +
+                    '</div>' +
+                '</td>' +
+                '</tr>';
+
+            return mainRow + detailRow;
         }).join('');
     }
 
@@ -1090,6 +1198,21 @@
         return (str || '')
             .replace(/&/g,'&amp;').replace(/</g,'&lt;')
             .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    /* ─── TOGGLE DETAIL ROW (MOBILE) ─── */
+    function toggleDetail(rowId, btn) {
+        const row = document.getElementById(rowId);
+        if (!row) return;
+        const isOpen = row.classList.contains('open');
+        // Tutup semua yang terbuka dulu
+        document.querySelectorAll('.detail-row.open').forEach(r => r.classList.remove('open'));
+        document.querySelectorAll('.btn-expand.open').forEach(b => b.classList.remove('open'));
+        // Buka yang diklik (kecuali tadi sudah terbuka)
+        if (!isOpen) {
+            row.classList.add('open');
+            btn.classList.add('open');
+        }
     }
 
     /* ─── TUKAR ARAH ─── */
